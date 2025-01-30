@@ -10,33 +10,30 @@ CLIENT_ID = os.getenv("1104512857")
 BASE_URL = "https://api.dhan.co"
 
 # Trading Parameters
-STOCK_SYMBOL = "IDEA-EQ"  # ✅ Correct symbol for Vodafone Idea on NSE
+SECURITY_ID = "1168501"  # ✅ Correct security ID for Vodafone Idea (IDEA)
 TRADE_QUANTITY = 100  # Buy 100 shares
 STOP_LOSS_PERCENT = 5  # 5% stop-loss
 TAKE_PROFIT_PERCENT = 10  # 10% take-profit
 
 # Fetch live stock price
-def get_stock_price(symbol):
-    url = f"{BASE_URL}/market/v1/instruments/details/{symbol}"
+def get_stock_price(security_id):
+    url = f"{BASE_URL}/market/v1/quote/{security_id}"
     headers = {
         "X-Dhan-Client-Id": CLIENT_ID,
         "X-Dhan-Auth-Token": API_KEY
     }
-
+    
     response = requests.get(url, headers=headers)
     data = response.json()
-
-    print(f"DEBUG - Price Fetch Response: {data}")  # ✅ Debugging response
-
-    if "closePrice" in data:  # Check if correct key exists
-        return float(data["closePrice"])  
+    
+    if "ltp" in data:
+        return float(data["ltp"])
     else:
         print("⚠️ Error fetching price:", data)
         return None
 
-
 # Place stock order
-def place_order(symbol, quantity, order_type, price):
+def place_order(security_id, quantity, order_type, price):
     url = f"{BASE_URL}/orders/v1/place/"
     headers = {
         "X-Dhan-Client-Id": CLIENT_ID,
@@ -45,11 +42,11 @@ def place_order(symbol, quantity, order_type, price):
     }
     
     payload = {
-        "security_id": symbol,
+        "security_id": security_id,
         "exchange_segment": "NSE_EQ",
         "transactionType": order_type,
         "quantity": quantity,
-        "orderType": "LIMIT",
+        "orderType": "LIMIT",  # Use LIMIT order
         "productType": "INTRADAY",
         "price": price
     }
@@ -57,7 +54,6 @@ def place_order(symbol, quantity, order_type, price):
     response = requests.post(url, json=payload, headers=headers)
     response_data = response.json()
 
-    # ✅ Print the response to debug errors
     print(f"ORDER RESPONSE: {response_data}")
     
     if "order_id" in response_data:
@@ -65,7 +61,6 @@ def place_order(symbol, quantity, order_type, price):
     else:
         print("⚠️ Order Failed:", response_data)
         return None
-
 
 # Fetch order status
 def get_order_status(order_id):
@@ -80,9 +75,9 @@ def get_order_status(order_id):
 
 # Automated trading with stop-loss & take-profit
 def auto_trade():
-    entry_price = get_stock_price(STOCK_SYMBOL)
+    entry_price = get_stock_price(SECURITY_ID)
     if entry_price is None:
-        print("Error fetching stock price. Exiting.")
+        print("⚠️ Error fetching stock price. Exiting.")
         return
 
     stop_loss_price = entry_price - (entry_price * STOP_LOSS_PERCENT / 100)
@@ -91,31 +86,31 @@ def auto_trade():
     print(f"Entry Price: {entry_price}, Stop Loss: {stop_loss_price}, Take Profit: {take_profit_price}")
 
     # Place buy order
-    order_id = place_order(STOCK_SYMBOL, TRADE_QUANTITY, "BUY", entry_price)
+    order_id = place_order(SECURITY_ID, TRADE_QUANTITY, "BUY", entry_price)
     if order_id is None:
-        print("Order Failed. Exiting.")
+        print("⚠️ Order Failed. Exiting.")
         return
 
-    print(f"Buy Order Placed: {order_id}")
+    print(f"✅ Buy Order Placed: {order_id}")
 
     # Monitor trade
     while True:
-        current_price = get_stock_price(STOCK_SYMBOL)
+        current_price = get_stock_price(SECURITY_ID)
         if current_price is None:
-            print("Error fetching price. Retrying...")
+            print("⚠️ Error fetching price. Retrying...")
             time.sleep(10)
             continue
 
-        print(f"Current Price: {current_price}")
+        print(f"📈 Current Price: {current_price}")
 
         if current_price <= stop_loss_price:
-            print("Stop-Loss hit. Selling position...")
-            place_order(STOCK_SYMBOL, TRADE_QUANTITY, "SELL", current_price)
+            print("❌ Stop-Loss hit. Selling position...")
+            place_order(SECURITY_ID, TRADE_QUANTITY, "SELL", current_price)
             break
 
         if current_price >= take_profit_price:
-            print("Take-Profit reached. Selling position...")
-            place_order(STOCK_SYMBOL, TRADE_QUANTITY, "SELL", current_price)
+            print("✅ Take-Profit reached. Selling position...")
+            place_order(SECURITY_ID, TRADE_QUANTITY, "SELL", current_price)
             break
 
         time.sleep(30)  # Check every 30 seconds
