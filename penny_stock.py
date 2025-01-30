@@ -10,27 +10,30 @@ CLIENT_ID = os.getenv("1104512857")
 BASE_URL = "https://api.dhan.co"
 
 # Trading Parameters
-STOCK_SYMBOL = "NSE_EQ_IDEA"  # IDEA Stock
+STOCK_SYMBOL = "IDEA-EQ"  # ✅ Correct symbol for Vodafone Idea on NSE
 TRADE_QUANTITY = 100  # Buy 100 shares
 STOP_LOSS_PERCENT = 5  # 5% stop-loss
 TAKE_PROFIT_PERCENT = 10  # 10% take-profit
 
 # Fetch live stock price
 def get_stock_price(symbol):
-    url = f"{BASE_URL}/market/v1/quote/{symbol}"
+    url = f"{BASE_URL}/market/v1/instruments/details/{symbol}"
     headers = {
         "X-Dhan-Client-Id": CLIENT_ID,
         "X-Dhan-Auth-Token": API_KEY
     }
-    
+
     response = requests.get(url, headers=headers)
     data = response.json()
-    
-    if "ltp" in data:
-        return float(data["ltp"])
+
+    print(f"DEBUG - Price Fetch Response: {data}")  # ✅ Debugging response
+
+    if "closePrice" in data:  # Check if correct key exists
+        return float(data["closePrice"])  
     else:
-        print("Error fetching price:", data)
+        print("⚠️ Error fetching price:", data)
         return None
+
 
 # Place stock order
 def place_order(symbol, quantity, order_type, price):
