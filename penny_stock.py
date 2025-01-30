@@ -46,20 +46,23 @@ def place_order(symbol, quantity, order_type, price):
         "exchange_segment": "NSE_EQ",
         "transactionType": order_type,
         "quantity": quantity,
-        "orderType": "LIMIT",  # Use LIMIT order
+        "orderType": "LIMIT",
         "productType": "INTRADAY",
-        "price": price  # Use live price for limit order
+        "price": price
     }
     
     response = requests.post(url, json=payload, headers=headers)
     response_data = response.json()
 
+    # ✅ Print the response to debug errors
     print(f"ORDER RESPONSE: {response_data}")
     
     if "order_id" in response_data:
         return response_data["order_id"]
     else:
+        print("⚠️ Order Failed:", response_data)
         return None
+
 
 # Fetch order status
 def get_order_status(order_id):
