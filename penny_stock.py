@@ -17,20 +17,23 @@ TAKE_PROFIT_PERCENT = 10  # 10% take-profit
 
 # Fetch live stock price
 def get_stock_price(security_id):
-    url = f"{BASE_URL}/market/v1/quote/{security_id}"
+    url = f"{BASE_URL}/market/v1/quote/NSE/{security_id}"  # ✅ Corrected URL format
     headers = {
         "X-Dhan-Client-Id": CLIENT_ID,
         "X-Dhan-Auth-Token": API_KEY
     }
-    
+
     response = requests.get(url, headers=headers)
     data = response.json()
-    
-    if "ltp" in data:
-        return float(data["ltp"])
+
+    print(f"DEBUG - Price Fetch Response: {data}")  # ✅ Debugging response
+
+    if "ltp" in data:  # ✅ Correct key for last traded price
+        return float(data["ltp"])  
     else:
         print("⚠️ Error fetching price:", data)
         return None
+
 
 # Place stock order
 def place_order(security_id, quantity, order_type, price):
